@@ -9,18 +9,14 @@ import javafx.stage.Stage;
 import java.util.*;
 import javafx.concurrent.*;
 import javafx.beans.property.*;
-
+import java.util.concurrent.atomic.*;
 
 public class Main extends Application {
 
     Stage window;
-	// ObservableList<Process> pros = FXCollections.observableArrayList();
-	// ObservableList<Process> running = FXCollections.observableArrayList();
-	// ObservableList<Process> ready = FXCollections.observableArrayList();
-	// ObservableList<Process> blocked = FXCollections.observableArrayList();
 	Scheduler duler = new Scheduler();
-
-	
+	Scene scene1;
+	Scene scene2;
 	@Override
     public void start(Stage primaryStage)  {
         initGui(primaryStage);
@@ -29,14 +25,20 @@ public class Main extends Application {
 		t.start();
 	}
 
-   
-	void initGui(Stage primaryStage) {
-		window = primaryStage;
-        window.setTitle("OS");
+	void initScene1( ) {
+		
+		BorderPane bd = new BorderPane();
+		bd.setPadding(new Insets(30,30,30,30));
 		
 		
-        Button button = new Button("Sort");
-		button.setOnAction(e -> duler.sort());
+		HBox top = new HBox();
+		top.setPadding(new Insets(20,20,20,20));
+		Label msg = new Label();
+		msg.textProperty().bind(duler.messageProperty());
+		msg.setPrefWidth(100);
+		top.getChildren().addAll(msg);
+		bd.setTop(top);
+       
 
 		VBox listBox = new VBox();
 		listBox.setSpacing(5);
@@ -49,7 +51,7 @@ public class Main extends Application {
 		Label lbReady = new Label("Ready:");
 		Label lbBlocked = new Label("Blocked:");
 		listBox.getChildren().addAll(lbRunning, runningList,lbReady, readyList,lbBlocked, blockedList);
-
+		bd.setCenter(listBox);
 		
 		
 		ListView<String> instsList = new ListView<>();
@@ -58,29 +60,27 @@ public class Main extends Application {
         instsList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		
 		instsList.setPadding(new Insets(30,30,30,30));
+		bd.setRight(instsList);
 
 		VBox vb = new VBox();
 		vb.setPadding(new Insets(30,30,30,30));
-		Label lb1 = new Label("hi");
-		Label lb2 = new Label();
-		lb2.textProperty().bind(duler.messageProperty());
-		lb1.setPrefWidth(100);
-		lb2.setPrefWidth(100);
-		vb.getChildren().addAll(lb1, lb2);
-		
-		BorderPane bd = new BorderPane();
-		bd.setPadding(new Insets(30,30,30,30));
-		bd.setCenter(listBox);
-		bd.setRight(instsList);
-		bd.setTop(button);
-		
 		bd.setLeft(vb);
 		
-        Scene scene = new Scene(bd, 800, 600);
-        window.setScene(scene);
-        window.show();
-    }
+        Scene scene1 = new Scene(bd, 800, 600);
+        window.setScene(scene1);
 
+	}
+	void initScene2( ) {
+		
+	}
+	void initGui(Stage primaryStage) {
+		window = primaryStage;
+        window.setTitle("OS");
+		initScene1();
+		initScene2();
+		window.show();
+	}
+	
 	ListView<Process> listFactory(ObservableList<Process> items) {
 		ListView<Process> list = new ListView<>();
 		list.itemsProperty().bindBidirectional(new SimpleListProperty<Process>(items));
@@ -105,6 +105,7 @@ class Scheduler extends Task<Void> {
 	ObservableList<Process> ready;
 	ObservableList<Process> blocked;
 	ObservableList<Process> pros;
+	AtomicBoolean flag = new AtomicBoolean(false);
 	
 	
 	Scheduler() {
@@ -116,8 +117,8 @@ class Scheduler extends Task<Void> {
 
 	@Override
 	protected Void call() {
-		for(int i=1; i<10 ; i++) {
-			Process p = new Process(i);
+		for(int i=0; i<4 ; i++) {
+			Process p = new Process();
 			pros.addAll(p);
 		}
 		running.addAll(pros.get(0));
@@ -136,13 +137,28 @@ class Scheduler extends Task<Void> {
 					@Override
 					public void run() {
 						FXCollections.sort(ready);
-						Process nextRunning = ready.remove(0);
-						Process quitRunning = running.remove(0);
+						Process nextRunning = null;
+						Process curRunning = null;
 						
+						if(!ready.isEmpty()) {
+							nextRunning = ready.remove(0);
+						}
+						if(!running.isEmpty()) {
+							curRunning = running.remove(0);
+						}
+						if(ready.isEmpty() && running.isEmpty()) {
+							updateMessage("none process");
+							return;
+						}
+					
+						updateMessage(curRunning.toString()+ " runnning");
+						boolean done = curRunning.run();
+						if(done == true) {
+							updateMessage(curRunning.toString()+ " done");
+						} else {
+							ready.add(curRunning);
+						}
 						running.add(nextRunning);
-			
-						ready.add(quitRunning);
-						
 					}
 				});
 		}
@@ -157,32 +173,49 @@ class Scheduler extends Task<Void> {
 }
 
 
-class Process implements Comparable<Process> {
+class Process  implements Comparable<Process>  {
+	static int nextPid = 0;
+	final int INTERVAL = 3;
+	final int INTERVAL_EACH_INST = 200;
 	String inst;
 	int pc = 0;
 	int pid;
 	int pri;
 	double vruntime;
 	int runtime;
-	Process(int pid) {
-		this.pid = pid;
+	Process() {
+		pid = nextPid++;
+		pri = 5;
+		runtime = 2;
+		vruntime = runtime*pri;
 	}
 
 	void setPri(int pri) {
 		this.pri = pri;
 	}
-	synchronized void run() {
-		try{ Thread.sleep(300);
-		} catch(InterruptedException e) {}
-		System.out.println("Process "+pid+"run ");
-		runtime--;
-		vruntime = runtime*pri;
-		
+	
+	public boolean run() {
+		Platform.runLater(new Runnable() {
+				@Override
+				public void run () {
+					if(vruntime <=0) {
+						System.out.println("Process "+pid+" done!");
+						return;
+					}
+					System.out.println("Process "+pid+" run ");
+					for(int i=0; i<INTERVAL ; i++) {
+						try{ Thread.sleep(INTERVAL_EACH_INST);
+						} catch(InterruptedException e) {}
+						
+						runtime--;
+						pc++;
+					}
+					vruntime = runtime*pri;
+				}
+			});
+		return vruntime<=0?true:false;
 	}
 	
-	
-
-
 	@Override
 	public String toString() {
 		return "Process "+ String.valueOf(pid);
@@ -190,6 +223,7 @@ class Process implements Comparable<Process> {
 
 	@Override
 	public int compareTo(Process o) {
-		return - (this.vruntime - o.vruntime);
+		return - (int)(this.vruntime - o.vruntime);
+		// return this.pid - o.pid;
 	}
 }
