@@ -20,15 +20,17 @@ public class Main extends Application {
 	@Override
     public void start(Stage primaryStage)  {
         initGui(primaryStage);
-		Thread t = new Thread(duler);
-		t.setDaemon(true);
-		t.start();
+		// Thread t = new Thread(duler);
+		// t.setDaemon(true);
+		// t.start();
 	}
 
 	void initScene1( ) {
 		
 		BorderPane bd = new BorderPane();
 		bd.setPadding(new Insets(30,30,30,30));
+		scene1 = new Scene(bd, 800, 600);
+        // window.setScene(scene1);
 		
 		
 		HBox top = new HBox();
@@ -64,13 +66,17 @@ public class Main extends Application {
 
 		VBox vb = new VBox();
 		vb.setPadding(new Insets(30,30,30,30));
+		Button btnScene2 = new Button("DeadLock");
+		btnScene2.setOnAction(e -> window.setScene(scene2));
 		bd.setLeft(vb);
-		
-        Scene scene1 = new Scene(bd, 800, 600);
-        window.setScene(scene1);
-
+	
 	}
-	void initScene2( ) {
+	void initScene2() {
+		BorderPane bd = new BorderPane();
+		bd.setPadding(new Insets(30,30,30,30));
+		scene2 = new Scene(bd, 800, 600);
+
+		Label lb = new Label("scene2");
 		
 	}
 	void initGui(Stage primaryStage) {
@@ -78,6 +84,7 @@ public class Main extends Application {
         window.setTitle("OS");
 		initScene1();
 		initScene2();
+		window.setScene(scene2);
 		window.show();
 	}
 	
