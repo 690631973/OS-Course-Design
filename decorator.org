@@ -1,0 +1,38 @@
+装饰器是对函数进行函数操作,产生一个新的函数
+
+比如map 可以用来代替Loop
+map(f, list)
+其实就是 map和f共同合作,形成了新的函数,姑且叫做g,g以list作为参数
+
+我们看一下
+c = a+b
+
+a是装饰函数,即装饰器, b是被装饰的函数,两者相结合,形成了c
+1 def read(file):
+2     x = open(f, 'r')
+3     y = x.read() 
+4     x.close() 
+5     return y
+
+
+1 def deco_try(func): 
+2     def _decotry(*arg, **kwarg): 
+3         try: 
+4             func(*arg, **kwarg) 
+5         except Exception, ex: 
+6             print 'app error', str(ex) 
+7             raise ex 
+8     return _decotry      
+
+1 @deco_try
+2 def read(file):
+3     x = open(f, 'r')
+4     y = x.read() 
+5     x.close() 
+6     return y
+
+      
+
+deco_try is a 
+func is b, namely read is b
+_decotry  is c
