@@ -11,13 +11,13 @@ import javafx.concurrent.*;
 import javafx.beans.property.*;
 import java.util.concurrent.atomic.*;
 
-
 public class Main extends Application {
     Stage window;
 	Scheduler duler = new Scheduler();
 	Scene scene1;
 	Scene scene2;
-	@Override
+	
+ 	@Override
     public void start(Stage primaryStage)  {
         initGui(primaryStage);
 		Thread t = new Thread(duler);
@@ -54,14 +54,16 @@ public class Main extends Application {
 		listBox.getChildren().addAll(lbRunning, runningList,lbReady, readyList,lbBlocked, blockedList);
 		bd.setCenter(listBox);
 		
+		VBox right = new VBox();
+		right.setSpacing(20);
+		Label lbCurInsts = new Label("Current Instruction List");
+		ListView<String> instList = new ListView<>();
+		instList.setItems(duler.instList);
+        instList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		
-		ListView<String> instsList = new ListView<>();
-		ObservableList insts = FXCollections.observableArrayList("");
-		instsList.setItems(insts);
-        instsList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		
-		instsList.setPadding(new Insets(30,30,30,30));
-		bd.setRight(instsList);
+		instList.setPadding(new Insets(30,30,30,30));
+		right.getChildren().addAll(lbCurInsts, instList);
+		bd.setRight(right);
 
 		VBox vb = new VBox();
 		vb.setPadding(new Insets(30,30,30,30));
@@ -78,12 +80,21 @@ public class Main extends Application {
 
 		
 		HBox top = new HBox();
+		top.setSpacing(20);
 		top.setPadding(new Insets(20,20,20,20));
 		TextField tfDeadLock = new TextField();
 		tfDeadLock.setPrefColumnCount(30);
 		tfDeadLock.setEditable(false);
 		tfDeadLock.textProperty().bind(duler.tfDeadLock.textProperty());
-		top.getChildren().addAll(tfDeadLock);
+		
+		Button btnReleaseDeadLock = new Button("ReleaseDeadLock");
+		btnReleaseDeadLock.setOnAction(e->duler.releaseDeadLock());
+		
+
+		Button btnAvoidDeadLock = new Button("Avoid DeadLock");
+		btnAvoidDeadLock.setOnAction(e->duler.avoidDeadLock());
+
+		top.getChildren().addAll(tfDeadLock, btnReleaseDeadLock, btnAvoidDeadLock);
 		bd.setTop(top);
 		
 		
@@ -100,9 +111,6 @@ public class Main extends Application {
 			tf.textProperty().bind(tfr.textProperty());
 			left.getChildren().addAll(tf);
 		}
-		
-		
-		
 
 		bd.setLeft(left);
 

@@ -12,6 +12,7 @@ import javafx.beans.property.*;
 import java.util.concurrent.atomic.*;
 import java.io.*;
 
+
 class ProcessIniter {
 	Scheduler duler;
 	ProcessIniter(Scheduler duler) {
@@ -52,7 +53,16 @@ class ProcessIniter {
 		return ret2;
 	}
 }
-
+class DeadLock {
+	int pida, pidb;
+	int res1tp ,res2tp;
+	DeadLock(int pida , int pidb, int res1tp, int res2tp) {
+		this.pida = pida;
+		this.pidb = pidb;
+		this.res1tp = res1tp;
+		this.res2tp = res2tp;
+	}
+}
 class Scheduler extends Task<Void> {
 
 	ObservableList<Process> running;
@@ -60,14 +70,15 @@ class Scheduler extends Task<Void> {
 	ObservableList<Process> blocked;
 	ObservableList<Process> pros;
 	ObservableList<Request> request;
-
+	DeadLock lk = null;
 	TextField tfDeadLock = new TextField("No DeadLock Found");
 
 	Resource [] res = {new Resource("A", 10), new Resource("B", 10), new Resource("C", 1)};
 
 	ObservableList<Request> requestPending;
 	ObservableList<Request> requestAllocated;
-	
+	boolean denyCheckDeadLock = false;
+	ObservableList<String> instList;
 	
 	Scheduler() {
 		this.pros = FXCollections.observableArrayList();
@@ -78,6 +89,8 @@ class Scheduler extends Task<Void> {
 	
 		this.requestPending = FXCollections.observableArrayList();
 		this.requestAllocated = FXCollections.observableArrayList();
+		this.instList = FXCollections.observableArrayList();
+		
 	}
 
 
@@ -90,10 +103,11 @@ class Scheduler extends Task<Void> {
 	}
 
 	void request() {
-		if(requestPending.isEmpty()) return;
+		if(requestPending.isEmpty()) return ;
 		Request r = requestPending.remove(0);
 		if(res[r.tp].request(r) == true) {
 			requestAllocated.addAll(r);
+			requestPending.remove(r);
 		}
 		else {
 			requestPending.addAll(r);
@@ -105,10 +119,17 @@ class Scheduler extends Task<Void> {
 		while(true) {
 			try{ Thread.sleep(1000);
 			} catch(InterruptedException e) {}
+
 			Platform.runLater(new Runnable() {
 					@Override
 					public void run() {
+						// if(runnning.isEmpty()) {
+						// 	updateMessage("none process running");
+						// }
+						// boolean done = runnning.run();
+						// request();
 						FXCollections.sort(ready);
+						
 						Process nextRunning = null;
 						Process curRunning = null;
 						
@@ -125,21 +146,30 @@ class Scheduler extends Task<Void> {
 					
 						updateMessage(curRunning.toString()+ " runnning");
 						boolean done = curRunning.run();
+						request();
 						if(done == true) {
 							updateMessage(curRunning.toString()+ " done");
 						} else {
 							ready.addAll(curRunning);
 						}
 						running.addAll(nextRunning);
-						request();
+						Process p = running.get(0);
+						String [] part_insts = Arrays.copyOfRange(p.insts, p.pc, p.insts.length);
+						List<String> ls = Arrays.asList(part_insts);
+						instList.setAll(ls);
 						
 					}
 				});
 		}
 		
 	}
+	void avoidDeadLock() {
+		FXCollections.reverse(requestPending);
+		denyCheckDeadLock = !denyCheckDeadLock;;
+	}
 	void checkDeadLock() {
-		System.out.println("checking....");
+		if(lk != null) return;
+		if(denyCheckDeadLock == true) return;
 		for(Request r1 : requestPending) {
 			Resource res1 = res[r1.tp];
 			for(Resource res2 : res) {
@@ -151,10 +181,28 @@ class Scheduler extends Task<Void> {
 				int a, b;
 				a = pida.get(0);
 				b = pidb.get(0);
-				System.out.println("checkDeadLock success "+a+" "+b);
-				tfDeadLock.setText("DeadLock Found:"+a+" "+b+" for "+"res"+res1.type+" and res"+res2.type);
+				tfDeadLock.setText("DeadLock Found:"+"Process "+a+" "+"Process "+b+" for "+"res"+res1.type+" and res"+res2.type);
+				lk = new DeadLock(a, b, res1.tp, res2.tp);
 			}
 		}
+	}
+
+	void releaseDeadLock() {
+		Platform.runLater(new Runnable(){
+				@Override
+				public void run() {
+					if(lk==null) return;
+					int pida = lk.pida;
+					int pidb = lk.pidb;
+					requestPending.removeIf(r -> r.pid == pida);
+					pros.removeIf(p -> p.pid == pida);
+					blocked.removeIf(p -> p.pid == pida);
+				
+					tfDeadLock.setText("DeadLock released by killing Process "+pida);
+					lk = null;
+				}
+		
+			});
 	}
 		
 	void sort(){
@@ -167,92 +215,5 @@ class Scheduler extends Task<Void> {
 
 
 
-class Process  implements Comparable<Process>  {
-	static int nextPid = 0;
-	final int INTERVAL = 1;
-	final int INTERVAL_EACH_INST = 200;
-	String []insts;
-	int pc = 0;
-	int pid;
-	int pri;
-	double vruntime;
-	int runtime;
-	Scheduler duler;
-	HashMap<Integer,Integer> allocated;
-	HashMap<Integer,Integer> pending;
-	Process(Scheduler duler, int pid, String[] insts) {
-		this.duler = duler;
-		// pid = nextPid++;
-		pri = 5;
-		runtime = 10;
-		vruntime = runtime*pri;
-		this.insts = insts;
-		this.pid = pid; 
-		
-	}
-
-	public boolean run() {
-		Platform.runLater(new Runnable() {
-				@Override
-				public void run () {
-					
-					if(pc >= insts.length || vruntime<=0) {
-						System.out.println("Process "+pid+" done!");
-						return ;
-					}
-					System.out.println("Process "+pid+" run ");
-					for(int i=0; i<INTERVAL ; i++) {
-						try{ Thread.sleep(INTERVAL_EACH_INST);
-						} catch(InterruptedException e) {}
-						exec();
-						runtime--;
-						pc++;
-					}
-					vruntime = runtime*pri;
-				}
-			});
-		return (pc>=insts.length || vruntime<=0)?true:false;
-	}
-	void exec() {
-		// if(pc == 0 && pid == 0) {
-		// 	request("A", 10);
-		// }
-		// if (pc == 1 && pid == 0) {
-		// 	request("B", 10);
-		// }
-
-		// if(pc == 1 && pid == 1) {
-		// 	request("A", 10);
-		// }
-		// if (pc == 0 && pid == 1) {
-		// 	request("B", 10);
-		// }
-		assert(pc < insts.length);
-		if(pc < insts.length) {
-			String []inst = insts[pc].split(" ", 4);
-			if(inst[0].equals("request")) {
-				request(inst[1], Integer.valueOf(inst[2]));
-			}
-		} else {
-			pc--;
-			System.out.println("Process "+pid+" done");
-		}
-	}
-
-	void request(String tp, int nReq) {
-		Request req = new Request(pid, tp, nReq);
-		duler.requestPending.addAll(req);
-	}
-	@Override
-	public String toString() {
-		return "Process "+ String.valueOf(pid);
-	}
-
-	@Override
-	public int compareTo(Process o) {
-		return - (int)(this.vruntime - o.vruntime);
-		// return this.pid - o.pid;
-	}
-}
 
 
