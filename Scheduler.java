@@ -25,7 +25,7 @@ class ProcessIniter {
 			String inst = null;
 			while((inst = reader.readLine())!= null) {
 				if(inst.contains("pid")) {
-					int pid = Integer.valueOf(inst.split(" ", 2)[1]);
+					int pid = Integer.valueOf(inst.split(":", 2)[1]);
 					System.out.println(pid);
 					String [] pinsts = getInsts(reader);
 					Process p = new Process(duler, pid, pinsts);
@@ -53,6 +53,7 @@ class ProcessIniter {
 		return ret2;
 	}
 }
+
 class DeadLock {
 	int pida, pidb;
 	int res1tp ,res2tp;
@@ -63,6 +64,8 @@ class DeadLock {
 		this.res2tp = res2tp;
 	}
 }
+
+
 class Scheduler extends Task<Void> {
 
 	ObservableList<Process> running;

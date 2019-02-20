@@ -3,13 +3,11 @@ request A 10
 request B 10
 add ax bx cx 
 done
-
 pid:1
 request B 10
 request A 10
 add ax bx cx 
 done
-
 pid:2
 add ax bx cx 
 add ax bx cx 

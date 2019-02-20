@@ -131,7 +131,7 @@ public class Main extends Application {
         window.setTitle("OS");
 		initScene1();
 		initScene2();
-		window.setScene(scene2);
+		window.setScene(scene1);
 		window.show();
 	}
 	
