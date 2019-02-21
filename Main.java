@@ -86,24 +86,22 @@ public class Main extends Application {
 		tfDeadLock.setPrefColumnCount(30);
 		tfDeadLock.setEditable(false);
 		tfDeadLock.textProperty().bind(duler.tfDeadLock.textProperty());
+
 		
 		Button btnReleaseDeadLock = new Button("ReleaseDeadLock");
 		btnReleaseDeadLock.setOnAction(e->duler.releaseDeadLock());
-		
 
 		Button btnAvoidDeadLock = new Button("Avoid DeadLock");
 		btnAvoidDeadLock.setOnAction(e->duler.avoidDeadLock());
-
+		
 		top.getChildren().addAll(tfDeadLock, btnReleaseDeadLock, btnAvoidDeadLock);
 		bd.setTop(top);
 		
 		
-		Button btn2Scene1 = new Button("Go to Scene1");
-		btn2Scene1.setOnAction(e -> window.setScene(scene1));
+	
 		VBox left = new VBox();
 		left.setSpacing(10);
 		left.setPadding(new Insets(20,20,20,20));
-		left.getChildren().addAll(btn2Scene1);
 		for(Resource res  : duler.res) {
 			TextField tf = new TextField();
 			TextField tfr = res.tf;
@@ -111,18 +109,33 @@ public class Main extends Application {
 			tf.textProperty().bind(tfr.textProperty());
 			left.getChildren().addAll(tf);
 		}
-
+		Label msg = new Label();
+		msg.textProperty().bind(duler.messageProperty());
+		left.getChildren().addAll(msg);
 		bd.setLeft(left);
 
+		
 		VBox center = new VBox();
 		center.setSpacing(20);
+		center.setPadding(new Insets(20,20,20,20));
+		ListView<Process> runningList = listFactory(duler.running);
+		ListView<Process> readyList = listFactory(duler.ready);
+		ListView<Process> blockedList = listFactory(duler.blocked);
+		Label lbRunning = new Label("Running:");
+		Label lbReady = new Label("Ready:");
+		Label lbBlocked = new Label("Blocked:");
+		
+		center.getChildren().addAll(lbRunning, runningList,lbReady, readyList,lbBlocked, blockedList);
+		bd.setCenter(center);
+
+		VBox right = new VBox();
+		right.setSpacing(20);
 		ListView<Request> lsRequestPending = new ListView<>();
 		lsRequestPending.setItems(duler.requestPending);
 		ListView<Request> lsRequestAllocated = new ListView<>();
 		lsRequestAllocated.setItems(duler.requestAllocated);
-		center.getChildren().addAll(new Label("Pending Request"), lsRequestPending, new Label("Allocated Request"), lsRequestAllocated);
-		
-		bd.setCenter(center);
+		right.getChildren().addAll(new Label("Pending Request"), lsRequestPending, new Label("Allocated Request"), lsRequestAllocated);
+		bd.setRight(right);
 		
 		
 	}
@@ -131,7 +144,7 @@ public class Main extends Application {
         window.setTitle("OS");
 		initScene1();
 		initScene2();
-		window.setScene(scene1);
+		window.setScene(scene2);
 		window.show();
 	}
 	

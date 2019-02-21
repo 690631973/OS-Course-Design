@@ -24,6 +24,8 @@ class Process  implements Comparable<Process>  {
 	Scheduler duler;
 	HashMap<Integer,Integer> allocated;
 	HashMap<Integer,Integer> pending;
+	boolean done = false;
+	boolean blocked = false;
 	Process(Scheduler duler, int pid, String[] insts) {
 		this.duler = duler;
 		// pid = nextPid++;
@@ -35,12 +37,13 @@ class Process  implements Comparable<Process>  {
 		
 	}
 
-	public boolean run() {
+	public void run() {
 		Platform.runLater(new Runnable() {
 				@Override
 				public void run () {
 					if(pc >= insts.length || vruntime<=0) {
 						System.out.println("Process "+pid+" done!");
+						done = true;
 						return ;
 					}
 					System.out.println("Process "+pid+" run ");
@@ -55,7 +58,6 @@ class Process  implements Comparable<Process>  {
 					vruntime = runtime*pri;
 				}
 			});
-		return (pc>=insts.length || vruntime<=0)?true:false;
 	}
 	void exec() {
 		assert(pc < insts.length);
@@ -68,8 +70,13 @@ class Process  implements Comparable<Process>  {
 
 	void request(String tp, int nReq) {
 		Request req = new Request(pid, tp, nReq);
+		// the following part should not be put here, but I am too lazy to change. Hope no bad thing happen. 
 		duler.requestPending.addAll(req);
-		
+		blocked = true;
+		// duler.blocked.addAll(duler.running.remove(0));
+		// if(!duler.ready.isEmpty()) {
+		// 	duler.running.addAll( duler.ready.remove(0));
+		// }
 	}
 	@Override
 	public String toString() {

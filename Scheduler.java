@@ -37,6 +37,7 @@ class ProcessIniter {
 		duler.ready.addAll(duler.pros);
 		duler.ready.remove(0);
 	}
+	
 	static String[] getInsts(BufferedReader reader) {
 		ArrayList<String> ret = new ArrayList<String>();
 		String inst = null;
@@ -76,7 +77,7 @@ class Scheduler extends Task<Void> {
 	DeadLock lk = null;
 	TextField tfDeadLock = new TextField("No DeadLock Found");
 
-	Resource [] res = {new Resource("A", 10), new Resource("B", 10), new Resource("C", 1)};
+	Resource [] res = {new Resource("A", 10), new Resource("B", 10), new Resource("C", 100)};
 
 	ObservableList<Request> requestPending;
 	ObservableList<Request> requestAllocated;
@@ -93,7 +94,6 @@ class Scheduler extends Task<Void> {
 		this.requestPending = FXCollections.observableArrayList();
 		this.requestAllocated = FXCollections.observableArrayList();
 		this.instList = FXCollections.observableArrayList();
-		
 	}
 
 
@@ -111,6 +111,12 @@ class Scheduler extends Task<Void> {
 		if(res[r.tp].request(r) == true) {
 			requestAllocated.addAll(r);
 			requestPending.remove(r);
+			for(int i=0; i<blocked.size();i++){
+				if(r.pid == blocked.get(i).pid) {
+					ready.addAll(blocked.remove(i));
+					return;
+				}
+			}
 		}
 		else {
 			requestPending.addAll(r);
@@ -126,40 +132,43 @@ class Scheduler extends Task<Void> {
 			Platform.runLater(new Runnable() {
 					@Override
 					public void run() {
-						// if(runnning.isEmpty()) {
-						// 	updateMessage("none process running");
-						// }
-						// boolean done = runnning.run();
-						// request();
-						FXCollections.sort(ready);
-						
-						Process nextRunning = null;
-						Process curRunning = null;
-						
-						if(!ready.isEmpty()) {
-							nextRunning = ready.remove(0);
-						}
-						if(!running.isEmpty()) {
-							curRunning = running.remove(0);
-						}
-						if(ready.isEmpty() && running.isEmpty()) {
-							updateMessage("none process");
+						if(running.isEmpty()) {
+							updateMessage("none process running");
 							return;
 						}
-					
-						updateMessage(curRunning.toString()+ " runnning");
-						boolean done = curRunning.run();
-						request();
-						if(done == true) {
-							updateMessage(curRunning.toString()+ " done");
-						} else {
-							ready.addAll(curRunning);
-						}
-						running.addAll(nextRunning);
-						Process p = running.get(0);
-						String [] part_insts = Arrays.copyOfRange(p.insts, p.pc, p.insts.length);
+						
+						Process cur = running.get(0);
+						String [] part_insts = Arrays.copyOfRange(cur.insts, cur.pc, cur.insts.length);
 						List<String> ls = Arrays.asList(part_insts);
 						instList.setAll(ls);
+						
+						FXCollections.sort(ready);
+						
+						cur.run();
+						updateMessage(cur.toString()+" running");
+						if(cur.done) {
+							running.remove(0);
+						}
+						if(cur.blocked) {
+							blocked.addAll(running.remove(0));
+							if(!ready.isEmpty()) {
+								running.addAll(ready.remove(0));
+							}
+						}
+						else {
+							if(!ready.isEmpty()) {
+								ready.addAll(running.remove(0));
+								running.addAll(ready.remove(0));
+							} 
+						}
+						request();
+						if(running.isEmpty()) {
+							if(!ready.isEmpty()) {
+								running.addAll(ready.remove(0));
+							}
+						}
+					
+						
 						
 					}
 				});
