@@ -76,9 +76,12 @@ class Process  implements Comparable<Process>  {
 		if(inst[0].equals("sto")) {
 			sto(Integer.parseInt(inst[1]),Integer.parseInt(inst[2]));
 		}
-	
+		if(inst[0].equals("ld")) {
+			ld(Integer.parseInt(inst[1]),Integer.parseInt(inst[2]));
+			
+		}
 	}
-	void sto(int logicAddr, int data) {
+	int MMU(int logicAddr) {
 		int N = 2;
 		int pagenum = logicAddr >> N;
 		int offset = logicAddr % (1<<N);
@@ -91,7 +94,13 @@ class Process  implements Comparable<Process>  {
 		}
 		// no swap out
 		pyhsicalAddr = pagenum << N + offset;
-		duler.memo.get(pyhsicalAddr).data = data;
+		return pyhsicalAddr;
+	}
+	void ld(int logicAddr, int reg) {
+		reg = duler.memo.get(MMU(logicAddr)).data;
+	}
+	void sto(int logicAddr, int data) {
+		duler.memo.get(MMU(logicAddr)).data = data;
 	}
 
 	void request(String tp, int nReq) {

@@ -86,7 +86,7 @@ class Scheduler extends Task<Void> {
 	ObservableList<Process> pros;
 	ObservableList<Request> request;
 	DeadLock lk = null;
-	TextField tfDeadLock = new TextField("No DeadLock Found");
+	Label tfDeadLock = new Label("No DeadLock Found");
 
 	Resource [] res = {new Resource("A", 10), new Resource("B", 10), new Resource("C", 100)};
 
@@ -168,7 +168,7 @@ class Scheduler extends Task<Void> {
 								running.addAll(ready.remove(0));
 							}
 							else if(!blocked.isEmpty()){
-								updateMessage("blocked waiting for allocation");
+								updateMessage("blocked!");
 								return;
 							}
 							else {
@@ -257,7 +257,6 @@ class Scheduler extends Task<Void> {
 					tfDeadLock.setText("DeadLock released by killing Process "+pida);
 					lk = null;
 				}
-		
 			});
 	}
 		

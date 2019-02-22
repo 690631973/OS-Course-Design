@@ -82,9 +82,7 @@ public class Main extends Application {
 		HBox top = new HBox();
 		top.setSpacing(20);
 		top.setPadding(new Insets(20,20,20,20));
-		TextField tfDeadLock = new TextField();
-		tfDeadLock.setPrefColumnCount(30);
-		tfDeadLock.setEditable(false);
+		Label tfDeadLock = new Label();
 		tfDeadLock.textProperty().bind(duler.tfDeadLock.textProperty());
 
 		
@@ -135,9 +133,8 @@ public class Main extends Application {
 		
 
 		for(Resource res  : duler.res) {
-			TextField tf = new TextField();
-			TextField tfr = res.tf;
-			tf.setEditable(false);
+			Label tf = new Label();
+			Label tfr = res.tf;
 			tf.textProperty().bind(tfr.textProperty());
 			right.getChildren().addAll(tf);
 		}
@@ -153,11 +150,15 @@ public class Main extends Application {
 	}
 	void initGui(Stage primaryStage) {
 		window = primaryStage;
-        window.setTitle("OS");
+        window.setTitle("Visual Simulated Linux2.6 Process And Memory Management");
 		initScene1();
 		initScene2();
 		window.setScene(scene2);
+		
+		scene2.getStylesheets().add
+			(Main.class.getResource("style.css").toExternalForm());
 		window.show();
+		
 	}
 	
 	ListView<Process> listFactory(ObservableList<Process> items) {

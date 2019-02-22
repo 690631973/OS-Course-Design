@@ -18,7 +18,7 @@ public class Resource {
 	int n;
 	ArrayList<Integer> pending = new ArrayList<Integer>();
 	ArrayList<Integer> allocated = new ArrayList<Integer>();
-	TextField tf = new TextField();
+	Label tf = new Label();
 	Resource(String type, int n) {
 		this.type = type;
 		this.tp = type.charAt(0) - 'A';
