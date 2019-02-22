@@ -33,9 +33,20 @@ class ProcessIniter {
 				}
 			}
 		} catch(Exception e) {e.printStackTrace();}
-		duler.running.addAll(duler.pros.get(0));
-		duler.ready.addAll(duler.pros);
-		duler.ready.remove(0);
+
+		
+		try{
+			BufferedReader reader = new BufferedReader(new FileReader("create_pro_time.txt"));
+			String line = "";
+			while((line = reader.readLine()) != null) {
+				// int pid = Integer.parseInt(line.split(":", 2)[0]);
+				int loadTime = Integer.parseInt(line.split(":", 2)[1]);
+				duler.loadTimes.add(loadTime);
+			}
+		} catch(Exception e) {e.printStackTrace();}
+		// duler.running.addAll(duler.pros.get(0));
+		// duler.ready.addAll(duler.pros);
+		// duler.ready.remove(0);
 	}
 	
 	static String[] getInsts(BufferedReader reader) {
@@ -83,6 +94,10 @@ class Scheduler extends Task<Void> {
 	ObservableList<Request> requestAllocated;
 	boolean denyCheckDeadLock = false;
 	ObservableList<String> instList;
+	ObservableList<PageCell> pages;
+	ObservableList<MemoCell> memo;
+	ArrayList<Integer> loadTimes;
+	int time = 0;
 	
 	Scheduler() {
 		this.pros = FXCollections.observableArrayList();
@@ -94,6 +109,13 @@ class Scheduler extends Task<Void> {
 		this.requestPending = FXCollections.observableArrayList();
 		this.requestAllocated = FXCollections.observableArrayList();
 		this.instList = FXCollections.observableArrayList();
+		this.pages = FXCollections.observableArrayList();
+		this.memo = FXCollections.observableArrayList();
+		
+		for(int i=0; i<100 ; i++) {
+			memo.addAll(new MemoCell(i));
+		}
+		loadTimes = new ArrayList<Integer>();
 	}
 
 
@@ -128,16 +150,38 @@ class Scheduler extends Task<Void> {
 		while(true) {
 			try{ Thread.sleep(1000);
 			} catch(InterruptedException e) {}
-
+			
 			Platform.runLater(new Runnable() {
 					@Override
 					public void run() {
+						if(!loadTimes.isEmpty() && time == loadTimes.get(0)) {
+							// add all pros at init time, but load it one by one
+							int pid = pros.get(0).pid;
+							ready.addAll(pros.remove(0));
+							loadTimes.remove(0);
+							updateMessage("new process: process "+pid+" loaded");
+						}
+						time++;
+						request();
 						if(running.isEmpty()) {
-							updateMessage("none process running");
-							return;
+							if(!ready.isEmpty()) {
+								running.addAll(ready.remove(0));
+							}
+							else if(!blocked.isEmpty()){
+								updateMessage("blocked waiting for allocation");
+								return;
+							}
+							else {
+								updateMessage("none process running");
+								return;
+							}
+						}
+						Process cur = running.get(0);
+						pages.setAll();
+						for(PageCell cell : cur.page) {
+							pages.addAll(cell);
 						}
 						
-						Process cur = running.get(0);
 						String [] part_insts = Arrays.copyOfRange(cur.insts, cur.pc, cur.insts.length);
 						List<String> ls = Arrays.asList(part_insts);
 						instList.setAll(ls);
@@ -148,8 +192,11 @@ class Scheduler extends Task<Void> {
 						updateMessage(cur.toString()+" running");
 						if(cur.done) {
 							running.remove(0);
+							if(!ready.isEmpty()) {
+								running.addAll(ready.remove(0));
+							}
 						}
-						if(cur.blocked) {
+						else if(cur.blocked) {
 							blocked.addAll(running.remove(0));
 							if(!ready.isEmpty()) {
 								running.addAll(ready.remove(0));
@@ -161,15 +208,12 @@ class Scheduler extends Task<Void> {
 								running.addAll(ready.remove(0));
 							} 
 						}
-						request();
-						if(running.isEmpty()) {
-							if(!ready.isEmpty()) {
-								running.addAll(ready.remove(0));
-							}
-						}
-					
 						
-						
+						// if(running.isEmpty()) {
+						// 	if(!ready.isEmpty()) {
+						// 		running.addAll(ready.remove(0));
+						// 	}
+						// }
 					}
 				});
 		}

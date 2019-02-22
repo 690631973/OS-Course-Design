@@ -1,19 +1,19 @@
-pid:0
-request A 10
-request B 10
-add ax bx cx 
-done
 pid:1
-request B 10
 request A 10
+request B 10
 add ax bx cx 
 done
 pid:2
+request B 10
+request A 10
+add ax bx cx 
+done
+pid:3
 add ax bx cx 
 add ax bx cx 
 add ax bx cx
 done
-pid:3
+pid:4
 add ax bx cx 
 add ax bx cx 
 add ax bx cx

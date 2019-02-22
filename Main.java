@@ -76,7 +76,7 @@ public class Main extends Application {
 	void initScene2() {
 		BorderPane bd = new BorderPane();
 		bd.setPadding(new Insets(30,30,30,30));
-		scene2 = new Scene(bd, 800, 600);
+		scene2 = new Scene(bd, 1200, 1000);
 
 		
 		HBox top = new HBox();
@@ -102,22 +102,24 @@ public class Main extends Application {
 		VBox left = new VBox();
 		left.setSpacing(10);
 		left.setPadding(new Insets(20,20,20,20));
-		for(Resource res  : duler.res) {
-			TextField tf = new TextField();
-			TextField tfr = res.tf;
-			tf.setEditable(false);
-			tf.textProperty().bind(tfr.textProperty());
-			left.getChildren().addAll(tf);
-		}
-		Label msg = new Label();
-		msg.textProperty().bind(duler.messageProperty());
-		left.getChildren().addAll(msg);
+		Label lbPages = new Label("Page Table");
+		ListView<PageCell> lsPages= new ListView();
+		lsPages.setItems(duler.pages);
+
+		Label lbMemo = new Label("Memory");
+		ListView<MemoCell>lsMemo= new ListView();
+		lsMemo.setItems(duler.memo);
+
+		left.getChildren().addAll(lbPages, lsPages, lbMemo, lsMemo);
 		bd.setLeft(left);
 
 		
 		VBox center = new VBox();
 		center.setSpacing(20);
 		center.setPadding(new Insets(20,20,20,20));
+		Label msg = new Label();
+		msg.textProperty().bind(duler.messageProperty());
+		center.getChildren().addAll(msg);
 		ListView<Process> runningList = listFactory(duler.running);
 		ListView<Process> readyList = listFactory(duler.ready);
 		ListView<Process> blockedList = listFactory(duler.blocked);
@@ -130,6 +132,16 @@ public class Main extends Application {
 
 		VBox right = new VBox();
 		right.setSpacing(20);
+		
+
+		for(Resource res  : duler.res) {
+			TextField tf = new TextField();
+			TextField tfr = res.tf;
+			tf.setEditable(false);
+			tf.textProperty().bind(tfr.textProperty());
+			right.getChildren().addAll(tf);
+		}
+		
 		ListView<Request> lsRequestPending = new ListView<>();
 		lsRequestPending.setItems(duler.requestPending);
 		ListView<Request> lsRequestAllocated = new ListView<>();

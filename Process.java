@@ -26,6 +26,8 @@ class Process  implements Comparable<Process>  {
 	HashMap<Integer,Integer> pending;
 	boolean done = false;
 	boolean blocked = false;
+	ArrayList<PageCell> page = new ArrayList<PageCell>();
+	
 	Process(Scheduler duler, int pid, String[] insts) {
 		this.duler = duler;
 		// pid = nextPid++;
@@ -33,9 +35,15 @@ class Process  implements Comparable<Process>  {
 		runtime = 10;
 		vruntime = runtime*pri;
 		this.insts = insts;
-		this.pid = pid; 
+		this.pid = pid;
 		
+		for(int i=0; i<2 ; i++) {
+			page.add(new PageCell(i, 10*pid));
+			
+		}
 	}
+
+	
 
 	public void run() {
 		Platform.runLater(new Runnable() {
@@ -65,7 +73,25 @@ class Process  implements Comparable<Process>  {
 		if(inst[0].equals("request")) {
 			request(inst[1], Integer.valueOf(inst[2]));
 		}
+		if(inst[0].equals("sto")) {
+			sto(Integer.parseInt(inst[1]),Integer.parseInt(inst[2]));
+		}
 	
+	}
+	void sto(int logicAddr, int data) {
+		int N = 2;
+		int pagenum = logicAddr >> N;
+		int offset = logicAddr % (1<<N);
+		int pyhsicalAddr = 0;
+		for(PageCell cell: page) {
+			if(cell.num == pagenum) {
+				pagenum = cell.addr;
+				break;
+			}
+		}
+		// no swap out
+		pyhsicalAddr = pagenum << N + offset;
+		duler.memo.get(pyhsicalAddr).data = data;
 	}
 
 	void request(String tp, int nReq) {
