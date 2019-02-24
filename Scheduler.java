@@ -13,58 +13,6 @@ import java.util.concurrent.atomic.*;
 import java.io.*;
 
 
-class ProcessIniter {
-	Scheduler duler;
-	ProcessIniter(Scheduler duler) {
-		this.duler = duler;
-	}
-	
-	void initPros() {
-		try{
-			BufferedReader reader = new BufferedReader(new FileReader("insts.txt"));
-			String inst = null;
-			while((inst = reader.readLine())!= null) {
-				if(inst.contains("pid")) {
-					int pid = Integer.valueOf(inst.split(":", 2)[1]);
-					System.out.println(pid);
-					String [] pinsts = getInsts(reader);
-					Process p = new Process(duler, pid, pinsts);
-					duler.pros.addAll(p);
-				}
-			}
-		} catch(Exception e) {e.printStackTrace();}
-
-		
-		try{
-			BufferedReader reader = new BufferedReader(new FileReader("create_pro_time.txt"));
-			String line = "";
-			while((line = reader.readLine()) != null) {
-				// int pid = Integer.parseInt(line.split(":", 2)[0]);
-				int loadTime = Integer.parseInt(line.split(":", 2)[1]);
-				duler.loadTimes.add(loadTime);
-			}
-		} catch(Exception e) {e.printStackTrace();}
-		// duler.running.addAll(duler.pros.get(0));
-		// duler.ready.addAll(duler.pros);
-		// duler.ready.remove(0);
-	}
-	
-	static String[] getInsts(BufferedReader reader) {
-		ArrayList<String> ret = new ArrayList<String>();
-		String inst = null;
-		try{
-			while(true) {
-				inst = reader.readLine();
-				if(inst == null || inst.equals("done")) break;
-				ret.add(inst);
-			}
-		} catch(Exception e) {e.printStackTrace();}
-		
-		String[] ret2 = new String[ret.size()];
-		ret.toArray(ret2);
-		return ret2;
-	}
-}
 
 class DeadLock {
 	int pida, pidb;
@@ -77,13 +25,12 @@ class DeadLock {
 	}
 }
 
-
 class Scheduler extends Task<Void> {
 
 	ObservableList<Process> running;
 	ObservableList<Process> ready;
 	ObservableList<Process> blocked;
-	ObservableList<Process> pros;
+	ObservableList<Process> pros; 
 	ObservableList<Request> request;
 	DeadLock lk = null;
 	Label tfDeadLock = new Label("No DeadLock Found");
@@ -98,7 +45,8 @@ class Scheduler extends Task<Void> {
 	ObservableList<MemoCell> memo;
 	ArrayList<Integer> loadTimes;
 	int time = 0;
-	
+	final boolean DEBUG = true;
+	boolean NEXT = false;
 	Scheduler() {
 		this.pros = FXCollections.observableArrayList();
 		this.running = FXCollections.observableArrayList();
@@ -122,12 +70,58 @@ class Scheduler extends Task<Void> {
 	@Override
 	protected Void call() {
 		(new ProcessIniter(this)).initPros();
-		sched();
+		if(DEBUG) {
+			schedDebug();
+		}
+		else {
+			sched();
+		}
 		
 		return null;
 	}
+	void next() {
+		System.out.println("!");
+		NEXT = true;
+	}
+	void schedDebug() {
+		while(true) {
+			while(!NEXT) {
+				try{ Thread.sleep(1000);
+				} catch(InterruptedException e) {}
 
-	void request() {
+			}
+			Platform.runLater(new InnerRun());
+			NEXT = false;
+		}
+	}
+	void sched() {
+		while(true) {
+			try{ Thread.sleep(1000);
+			} catch(InterruptedException e) {}
+			
+			Platform.runLater(new InnerRun());
+		}
+	
+	}
+	
+	class InnerRun implements Runnable {
+		@Override
+		public void run() {
+			loadNewProcess();
+			requestResource();
+			makeSureRunningExist();
+			Process cur = running.get(0);
+			showPageTableAndInstList(cur);
+			cur.run();
+			updateMessage(cur.toString()+" running");
+			stageSwitch(cur);
+			time++;
+		}
+	}
+	
+
+
+	void requestResource() {
 		if(requestPending.isEmpty()) return ;
 		Request r = requestPending.remove(0);
 		if(res[r.tp].request(r) == true) {
@@ -145,80 +139,67 @@ class Scheduler extends Task<Void> {
 			checkDeadLock();
 		}
 	}
-
-	void sched() {
-		while(true) {
-			try{ Thread.sleep(1000);
-			} catch(InterruptedException e) {}
-			
-			Platform.runLater(new Runnable() {
-					@Override
-					public void run() {
-						if(!loadTimes.isEmpty() && time == loadTimes.get(0)) {
-							// add all pros at init time, but load it one by one
-							int pid = pros.get(0).pid;
-							ready.addAll(pros.remove(0));
-							loadTimes.remove(0);
-							updateMessage("new process: process "+pid+" loaded");
-						}
-						time++;
-						request();
-						if(running.isEmpty()) {
-							if(!ready.isEmpty()) {
-								running.addAll(ready.remove(0));
-							}
-							else if(!blocked.isEmpty()){
-								updateMessage("blocked!");
-								return;
-							}
-							else {
-								updateMessage("none process running");
-								return;
-							}
-						}
-						Process cur = running.get(0);
-						pages.setAll();
-						for(PageCell cell : cur.page) {
-							pages.addAll(cell);
-						}
-						
-						String [] part_insts = Arrays.copyOfRange(cur.insts, cur.pc, cur.insts.length);
-						List<String> ls = Arrays.asList(part_insts);
-						instList.setAll(ls);
-						
-						FXCollections.sort(ready);
-						
-						cur.run();
-						updateMessage(cur.toString()+" running");
-						if(cur.done) {
-							running.remove(0);
-							if(!ready.isEmpty()) {
-								running.addAll(ready.remove(0));
-							}
-						}
-						else if(cur.blocked) {
-							blocked.addAll(running.remove(0));
-							if(!ready.isEmpty()) {
-								running.addAll(ready.remove(0));
-							}
-						}
-						else {
-							if(!ready.isEmpty()) {
-								ready.addAll(running.remove(0));
-								running.addAll(ready.remove(0));
-							} 
-						}
-						
-						// if(running.isEmpty()) {
-						// 	if(!ready.isEmpty()) {
-						// 		running.addAll(ready.remove(0));
-						// 	}
-						// }
-					}
-				});
+	void loadNewProcess() {
+		if(!loadTimes.isEmpty() && time == loadTimes.get(0)) {
+			// add all pros at init time, but load it one by one
+			int pid = pros.get(0).pid;
+			ready.addAll(pros.remove(0));
+			loadTimes.remove(0);
+			updateMessage("new process: process "+pid+" loaded");
 		}
 		
 	}
+	void makeSureRunningExist() {
+		if(running.isEmpty()) {
+			if(!ready.isEmpty()) {
+				running.addAll(ready.remove(0));
+			}
+			else if(!blocked.isEmpty()){
+				updateMessage("blocked!");
+				return;
+			}
+			else {
+				updateMessage("none process running");
+				return;
+			}
+		}
+		
+	}
+	void showPageTableAndInstList(Process cur) {
+		pages.setAll();
+		for(PageCell cell : cur.page) {
+			pages.addAll(cell);
+		}
+						
+		String [] part_insts = Arrays.copyOfRange(cur.insts, cur.pc, cur.insts.length);
+		List<String> ls = Arrays.asList(part_insts);
+		instList.setAll(ls);
+						
+		FXCollections.sort(ready);
+	}
+	void stageSwitch(Process cur) {
+		if(cur.done) {
+			running.remove(0);
+			if(!ready.isEmpty()) {
+				running.addAll(ready.remove(0));
+			}
+		}
+		else if(cur.blocked) {
+			blocked.addAll(running.remove(0));
+			if(!ready.isEmpty()) {
+				running.addAll(ready.remove(0));
+			}
+		}
+		else {
+			if(!ready.isEmpty()) {
+				ready.addAll(running.remove(0));
+				running.addAll(ready.remove(0));
+			} 
+		}
+						
+	}
+
+
 	void avoidDeadLock() {
 		FXCollections.reverse(requestPending);
 		denyCheckDeadLock = !denyCheckDeadLock;;

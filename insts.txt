@@ -19,4 +19,6 @@ add ax bx cx
 add ax bx cx
 request C 10
 request C 10
+sto 100 1
+ld 99 1
 done

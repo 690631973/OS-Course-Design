@@ -11,11 +11,28 @@ import javafx.concurrent.*;
 import javafx.beans.property.*;
 import java.util.concurrent.atomic.*;
 
+class DebugTask extends Task<Void> {
+	Scheduler duler;
+	DebugTask(Scheduler duler) {
+		this.duelr = duler;
+	}
+	@Override
+	protected Void run() {
+		duler.NEXT = true;
+		return null;
+	}	
+}
+class DebugThread extends Thread {
+	@Override
+	public void run() {
+		
+	}	
+}
+						
 public class Main extends Application {
     Stage window;
 	Scheduler duler = new Scheduler();
-	Scene scene1;
-	Scene scene2;
+	Scene scene;
 	
  	@Override
     public void start(Stage primaryStage)  {
@@ -25,58 +42,10 @@ public class Main extends Application {
 		t.start();
 	}
 
-	void initScene1( ) {
-		
+		void initScene() {
 		BorderPane bd = new BorderPane();
 		bd.setPadding(new Insets(30,30,30,30));
-		scene1 = new Scene(bd, 800, 600);
-      
-		
-		HBox top = new HBox();
-		top.setPadding(new Insets(20,20,20,20));
-		Label msg = new Label();
-		msg.textProperty().bind(duler.messageProperty());
-		msg.setPrefWidth(100);
-		top.getChildren().addAll(msg);
-		bd.setTop(top);
-       
-
-		VBox listBox = new VBox();
-		listBox.setSpacing(5);
-		listBox.setPadding(new Insets(10,10,10,10));
-
-		ListView<Process> runningList = listFactory(duler.running);
-		ListView<Process> readyList = listFactory(duler.ready);
-		ListView<Process> blockedList = listFactory(duler.blocked);
-		Label lbRunning = new Label("Running:");
-		Label lbReady = new Label("Ready:");
-		Label lbBlocked = new Label("Blocked:");
-		listBox.getChildren().addAll(lbRunning, runningList,lbReady, readyList,lbBlocked, blockedList);
-		bd.setCenter(listBox);
-		
-		VBox right = new VBox();
-		right.setSpacing(20);
-		Label lbCurInsts = new Label("Current Instruction List");
-		ListView<String> instList = new ListView<>();
-		instList.setItems(duler.instList);
-        instList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		
-		instList.setPadding(new Insets(30,30,30,30));
-		right.getChildren().addAll(lbCurInsts, instList);
-		bd.setRight(right);
-
-		VBox vb = new VBox();
-		vb.setPadding(new Insets(30,30,30,30));
-		Button btnScene2 = new Button("DeadLock Scene");
-		btnScene2.setOnAction(e -> window.setScene(scene2));
-		vb.getChildren().addAll(btnScene2);
-		bd.setLeft(vb);
-	
-	}
-	void initScene2() {
-		BorderPane bd = new BorderPane();
-		bd.setPadding(new Insets(30,30,30,30));
-		scene2 = new Scene(bd, 1200, 1000);
+		scene = new Scene(bd, 1200, 1000);
 
 		
 		HBox top = new HBox();
@@ -91,8 +60,11 @@ public class Main extends Application {
 
 		Button btnAvoidDeadLock = new Button("Avoid DeadLock");
 		btnAvoidDeadLock.setOnAction(e->duler.avoidDeadLock());
+
+		Button btnDebugNext = new Button("Next(Debug)");
+		btnAvoidDeadLock.setOnAction(e->duler.next());
 		
-		top.getChildren().addAll(tfDeadLock, btnReleaseDeadLock, btnAvoidDeadLock);
+		top.getChildren().addAll(tfDeadLock, btnReleaseDeadLock, btnAvoidDeadLock, btnDebugNext);
 		bd.setTop(top);
 		
 		
@@ -151,11 +123,10 @@ public class Main extends Application {
 	void initGui(Stage primaryStage) {
 		window = primaryStage;
         window.setTitle("Visual Simulated Linux2.6 Process And Memory Management");
-		initScene1();
-		initScene2();
-		window.setScene(scene2);
+		initScene();
+		window.setScene(scene);
 		
-		scene2.getStylesheets().add
+		scene.getStylesheets().add
 			(Main.class.getResource("style.css").toExternalForm());
 		window.show();
 		
