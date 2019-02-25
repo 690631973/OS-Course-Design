@@ -11,17 +11,7 @@ import javafx.concurrent.*;
 import javafx.beans.property.*;
 import java.util.concurrent.atomic.*;
 
-class DebugTask extends Task<Void> {
-	Scheduler duler;
-	DebugTask(Scheduler duler) {
-		this.duelr = duler;
-	}
-	@Override
-	protected Void run() {
-		duler.NEXT = true;
-		return null;
-	}	
-}
+
 class DebugThread extends Thread {
 	@Override
 	public void run() {

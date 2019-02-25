@@ -30,11 +30,13 @@ class Scheduler extends Task<Void> {
 	ObservableList<Process> running;
 	ObservableList<Process> ready;
 	ObservableList<Process> blocked;
-	ObservableList<Process> pros; 
+	ObservableList<Process> pros;
 	ObservableList<Request> request;
 	DeadLock lk = null;
 	Label tfDeadLock = new Label("No DeadLock Found");
-
+	
+	MemoryManager memorymanager;//!!!!!!!!!!!!!!!!!!
+	
 	Resource [] res = {new Resource("A", 10), new Resource("B", 10), new Resource("C", 100)};
 
 	ObservableList<Request> requestPending;
@@ -48,6 +50,7 @@ class Scheduler extends Task<Void> {
 	final boolean DEBUG = true;
 	boolean NEXT = false;
 	Scheduler() {
+		this.memorymanager=new MemoryManager();
 		this.pros = FXCollections.observableArrayList();
 		this.running = FXCollections.observableArrayList();
 		this.ready = FXCollections.observableArrayList();
@@ -60,7 +63,7 @@ class Scheduler extends Task<Void> {
 		this.pages = FXCollections.observableArrayList();
 		this.memo = FXCollections.observableArrayList();
 		
-		for(int i=0; i<100 ; i++) {
+		for(int i=0; i<256*128 ; i++) {
 			memo.addAll(new MemoCell(i));
 		}
 		loadTimes = new ArrayList<Integer>();
@@ -70,12 +73,9 @@ class Scheduler extends Task<Void> {
 	@Override
 	protected Void call() {
 		(new ProcessIniter(this)).initPros();
-		if(DEBUG) {
-			schedDebug();
-		}
-		else {
-			sched();
-		}
+		
+		sched();
+		
 		
 		return null;
 	}
@@ -109,7 +109,8 @@ class Scheduler extends Task<Void> {
 		public void run() {
 			loadNewProcess();
 			requestResource();
-			makeSureRunningExist();
+			if(!makeSureRunningExist())
+				return;
 			Process cur = running.get(0);
 			showPageTableAndInstList(cur);
 			cur.run();
@@ -149,20 +150,22 @@ class Scheduler extends Task<Void> {
 		}
 		
 	}
-	void makeSureRunningExist() {
+	boolean makeSureRunningExist() {
 		if(running.isEmpty()) {
 			if(!ready.isEmpty()) {
 				running.addAll(ready.remove(0));
+				return true;
 			}
 			else if(!blocked.isEmpty()){
 				updateMessage("blocked!");
-				return;
+				return true;
 			}
 			else {
 				updateMessage("none process running");
-				return;
+				return false;
 			}
 		}
+		return false;
 		
 	}
 	void showPageTableAndInstList(Process cur) {

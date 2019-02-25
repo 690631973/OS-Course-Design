@@ -37,10 +37,11 @@ class Process  implements Comparable<Process>  {
 		this.insts = insts;
 		this.pid = pid;
 		
-		for(int i=0; i<2 ; i++) {
+		/*for(int i=0; i<2 ; i++) {
 			page.add(new PageCell(i, 10*pid));
 			
-		}
+		}*/
+		this.duler.memorymanager.Allocate(this);
 	}
 
 	
@@ -81,7 +82,7 @@ class Process  implements Comparable<Process>  {
 			
 		}
 	}
-	int MMU(int logicAddr) {
+	/*int MMU(int logicAddr) {
 		int N = 2;
 		int pagenum = logicAddr >> N;
 		int offset = logicAddr % (1<<N);
@@ -95,12 +96,16 @@ class Process  implements Comparable<Process>  {
 		// no swap out
 		pyhsicalAddr = pagenum << N + offset;
 		return pyhsicalAddr;
-	}
+	}*/
 	void ld(int logicAddr, int reg) {
-		reg = duler.memo.get(MMU(logicAddr)).data;
+		int num=logicAddr/128;
+		int offset=logicAddr-num*128;
+		reg = duler.memorymanager.GetMemory(this,duler.memorymanager.MMU(this, num,(short) offset));
 	}
 	void sto(int logicAddr, int data) {
-		duler.memo.get(MMU(logicAddr)).data = data;
+		int num=logicAddr/128;
+		int offset=logicAddr-num*128;
+		duler.memorymanager.SetMemory(this,duler.memorymanager.MMU(this, num,(short) offset),(short) data);
 	}
 
 	void request(String tp, int nReq) {
