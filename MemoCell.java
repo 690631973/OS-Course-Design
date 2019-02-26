@@ -5,8 +5,9 @@ public class MemoCell {
 	}
 	int addr;
 	int data;
-	MemoCell(int addr) {
+	MemoCell(int addr,int num) {
 		this.addr= addr;
+		this.data=num;
 	}
 	
 }

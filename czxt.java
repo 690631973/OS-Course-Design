@@ -155,6 +155,7 @@ class MemoryManager{
 		//memory[loc[0]][loc[1]]=num;
 		int index=(int)loc[0]*128+(int)loc[1];
 		p.duler.memo.get(index).data=(int)num;
+		System.out.println("index:"+index+" num:"+num);
 		System.out.println("yezhen:"+loc[0]+"  pianyidizhi:"+loc[1]+"  xiugaichengle:"+num);
 	}
 	public short GetMemory(Process p,short[] loc) {

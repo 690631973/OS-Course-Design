@@ -70,6 +70,7 @@ class Process  implements Comparable<Process>  {
 	}
 	void exec() {
 		assert(pc < insts.length);
+		System.out.println("pid:"+pid+" ins:"+insts[pc]);
 		String []inst = insts[pc].split(" ", 4);
 		if(inst[0].equals("request")) {
 			request(inst[1], Integer.valueOf(inst[2]));

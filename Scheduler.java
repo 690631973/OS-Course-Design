@@ -64,7 +64,7 @@ class Scheduler extends Task<Void> {
 		this.memo = FXCollections.observableArrayList();
 		
 		for(int i=0; i<256*128 ; i++) {
-			memo.addAll(new MemoCell(i));
+			memo.add(new MemoCell(i,0));
 		}
 		loadTimes = new ArrayList<Integer>();
 	}
@@ -79,21 +79,7 @@ class Scheduler extends Task<Void> {
 		
 		return null;
 	}
-	void next() {
-		System.out.println("!");
-		NEXT = true;
-	}
-	void schedDebug() {
-		while(true) {
-			while(!NEXT) {
-				try{ Thread.sleep(1000);
-				} catch(InterruptedException e) {}
-
-			}
-			Platform.runLater(new InnerRun());
-			NEXT = false;
-		}
-	}
+	
 	void sched() {
 		while(true) {
 			try{ Thread.sleep(1000);
@@ -111,6 +97,7 @@ class Scheduler extends Task<Void> {
 			requestResource();
 			if(!makeSureRunningExist())
 				return;
+				
 			Process cur = running.get(0);
 			showPageTableAndInstList(cur);
 			cur.run();
@@ -136,6 +123,7 @@ class Scheduler extends Task<Void> {
 			}
 		}
 		else {
+			System.out.println("pid:"+r.pid);
 			requestPending.addAll(r);
 			checkDeadLock();
 		}
@@ -165,7 +153,7 @@ class Scheduler extends Task<Void> {
 				return false;
 			}
 		}
-		return false;
+		return true;
 		
 	}
 	void showPageTableAndInstList(Process cur) {
@@ -222,6 +210,7 @@ class Scheduler extends Task<Void> {
 				a = pida.get(0);
 				b = pidb.get(0);
 				tfDeadLock.setText("DeadLock Found:"+"Process "+a+" "+"Process "+b+" for "+"res"+res1.type+" and res"+res2.type);
+				System.out.println("a:"+a+" b:"+b);
 				lk = new DeadLock(a, b, res1.tp, res2.tp);
 			}
 		}
@@ -235,11 +224,26 @@ class Scheduler extends Task<Void> {
 					int pida = lk.pida;
 					int pidb = lk.pidb;
 					requestPending.removeIf(r -> r.pid == pida);
+					for(Request r: requestAllocated) {
+						if(r.pid == pida) {
+							res[r.tp].n += r.nReq;
+						}
+					}
+					for(Request r:requestPending) {
+						System.out.println("pending pid:"+r.pid);
+					}
+					requestAllocated.removeIf(r -> r.pid == pida);
 					pros.removeIf(p -> p.pid == pida);
 					blocked.removeIf(p -> p.pid == pida);
-				
+					for(Process p: blocked) {
+						if(p.pid == pidb){
+							ready.addAll(p);
+						}	
+					}
+					blocked.removeIf(p -> p.pid == pidb);
 					tfDeadLock.setText("DeadLock released by killing Process "+pida);
 					lk = null;
+					
 				}
 			});
 	}

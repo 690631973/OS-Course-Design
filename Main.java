@@ -52,7 +52,7 @@ public class Main extends Application {
 		btnAvoidDeadLock.setOnAction(e->duler.avoidDeadLock());
 
 		Button btnDebugNext = new Button("Next(Debug)");
-		btnAvoidDeadLock.setOnAction(e->duler.next());
+		//btnAvoidDeadLock.setOnAction(e->duler.next());
 		
 		top.getChildren().addAll(tfDeadLock, btnReleaseDeadLock, btnAvoidDeadLock, btnDebugNext);
 		bd.setTop(top);
